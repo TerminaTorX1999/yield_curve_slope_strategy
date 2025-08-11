@@ -1,0 +1,45 @@
+Yield Curve Slope Trading Strategy
+Author: Aditya Das
+Description:
+Trades based on the slope between 2-year and 10-year US Treasury yields. Generates buy signals when the curve steepens and sell signals when it flattens.
+"""
+
+import pandas as pd
+import yfinance as yf
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 1. Download Treasury Yield Data
+# ----------------------------
+tickers = ['^IRX', '^TNX']  # IRX: 3-month, TNX: 10-year
+data = yf.download(tickers, start='2015-01-01')['Adj Close'].dropna()
+
+# Use 2-year yield if available (otherwise 3-month here as proxy)
+# Here, just using IRX (~3-month) and TNX (10-year) for illustration
+data.columns = ['Short_Term_Yield', 'Long_Term_Yield']
+
+# ----------------------------
+# 2. Calculate Yield Curve Slope
+# ----------------------------
+data['Yield_Slope'] = data['Long_Term_Yield'] - data['Short_Term_Yield']
+
+# ----------------------------
+# 3. Generate Signals Based on Slope Changes
+# ----------------------------
+# Simple signal: buy when slope > threshold (steepening), sell when slope < -threshold (flattening)
+threshold = 0.5
+data['Signal'] = 0
+data.loc[data['Yield_Slope'] > threshold, 'Signal'] = 1
+data.loc[data['Yield_Slope'] < -threshold, 'Signal'] = -1
+
+# ----------------------------
+# 4. Plot Yield Curve Slope and Signals
+# ----------------------------
+plt.figure(figsize=(12,6))
+plt.plot(data['Yield_Slope'], label='Yield Curve Slope (10Y - 3M)')
+plt.axhline(threshold, color='green', linestyle='--', label='Buy Threshold')
+plt.axhline(-threshold, color='red', linestyle='--', label='Sell Threshold')
+plt.fill_between(data.index, -threshold, threshold, color='gray', alpha=0.1)
+plt.title('Yield Curve Slope and Trading Signals')
+plt.legend()
+plt.show()
